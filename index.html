@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Protocole du cycle d'escalade</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #F6F4EF;
+    --panel: #FFFFFF;
+    --ink: #2A2E2C;
+    --ink-soft: #6B6F6C;
+    --teal: #2C5F63;
+    --teal-dark: #1E4548;
+    --line: #E3DFD4;
+
+    --c-calme: #DCE6E1;      --c-calme-ink:#2F4A44;
+    --c-declenchement:#FBE7CE; --c-declenchement-ink:#7A4E17;
+    --c-escalade:#F8D2B8;     --c-escalade-ink:#8A3F13;
+    --c-crise:#F0C2BE;        --c-crise-ink:#7A2A24;
+    --c-desescalade:#D8E3F1;  --c-desescalade-ink:#2C4A6B;
+    --c-recuperation:#E3DCF0; --c-recuperation-ink:#493877;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.5;
+  }
+  h1,h2,h3{font-family:'Lora',serif; margin:0;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 28px 80px;}
+  /* header */
+  .top{display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px;}
+  .top h1{font-size:26px; font-weight:600; color:var(--teal-dark);}
+  .top p{margin:6px 0 0; color:var(--ink-soft); font-size:14px; max-width:520px;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  button{
+    font-family:'Inter',sans-serif; font-size:13.5px; font-weight:500;
+    border-radius:7px; border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); padding:9px 14px; cursor:pointer;
+  }
+  button:hover{border-color:var(--teal); color:var(--teal-dark);}
+  button.primary{background:var(--teal); color:#fff; border-color:var(--teal);}
+  button.primary:hover{background:var(--teal-dark);}
+  button.danger:hover{border-color:#B0433C; color:#B0433C;}
+  button:disabled{opacity:.45; cursor:not-allowed;}
+
+  /* child bar */
+  .childbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:20px;
+  }
+  .childbar label{font-size:13px; color:var(--ink-soft); font-weight:500;}
+  select, input[type=text]{
+    font-family:'Inter',sans-serif; font-size:14.5px;
+    border:1px solid var(--line); border-radius:7px; padding:8px 10px;
+    background:#fff; color:var(--ink);
+  }
+  select{min-width:220px;}
+  .childbar .spacer{flex:1;}
+  .savehint{font-size:12px; color:var(--ink-soft); font-style:italic; min-width:90px; text-align:right;}
+
+  /* stepper */
+  .stepper{display:flex; gap:8px; margin-bottom:0; flex-wrap:wrap;}
+  .step{
+    flex:1; min-width:130px; text-align:left; padding:12px 14px; border-radius:10px 10px 0 0;
+    border:1px solid var(--line); border-bottom:none; cursor:pointer; background:#EFECE3;
+    color:var(--ink-soft); position:relative; transition:transform .1s ease;
+  }
+  .step .num{font-size:11px; font-weight:600; opacity:.65; display:block; margin-bottom:2px;}
+  .step .lbl{font-size:13.5px; font-weight:600;}
+  .step.active{background:var(--phase-color); color:var(--phase-ink); border-color:var(--phase-color); z-index:2;}
+  .step:not(.active):hover{background:#E7E3D7;}
+
+  .panel{
+    background:var(--phase-color, var(--panel)); border:1px solid var(--line); border-radius:0 10px 10px 10px;
+    padding:26px 28px 28px;
+  }
+  .panel h2{font-size:20px; color:var(--phase-ink, var(--teal-dark)); margin-bottom:2px;}
+  .panel .sub{font-size:13px; color:var(--phase-ink, var(--ink-soft)); opacity:.85; margin-bottom:20px;}
+
+  .fields{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media (max-width:720px){.fields{grid-template-columns:1fr;}}
+  .field label{display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--phase-ink, var(--teal-dark));}
+  .field textarea{
+    width:100%; min-height:110px; resize:vertical; font-family:'Inter',sans-serif; font-size:14px;
+    border:1px solid rgba(0,0,0,.15); border-radius:8px; padding:10px 12px; background:rgba(255,255,255,.7);
+    color:var(--ink);
+  }
+  .field textarea:focus{outline:2px solid var(--teal); outline-offset:1px; background:#fff;}
+
+  /* empty state */
+  .empty{
+    background:var(--panel); border:1px dashed var(--line); border-radius:12px; padding:48px 24px;
+    text-align:center; color:var(--ink-soft);
+  }
+  .empty h2{font-size:18px; color:var(--ink); margin-bottom:8px;}
+
+  /* print view */
+  .printgrid{display:none;}
+  @media print{
+    .top .actions, .childbar, .stepper, .panel{display:none !important;}
+    .printgrid{display:block !important;}
+    body{background:#fff;}
+  }
+  .printgrid table{width:100%; border-collapse:collapse; margin-top:14px;}
+  .printgrid th,.printgrid td{border:1px solid #999; padding:8px 10px; font-size:12.5px; text-align:left; vertical-align:top;}
+  .printgrid th{background:var(--teal); color:#fff; font-family:'Inter',sans-serif;}
+  .printgrid td.phase{font-weight:600; width:14%;}
+  .printgrid .meta{font-size:13px; margin-bottom:4px;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--teal-dark); color:#fff; padding:9px 16px; border-radius:8px; font-size:13px;
+    opacity:0; transition:opacity .25s ease, transform .25s ease; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .author-credit{
+    margin-top:18px;
+    padding-top:12px;
+    border-top:1px solid #d9e2e5;
+    text-align:center;
+    font-size:12px;
+    color:#66757a;
+  }
+</style>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <div class="top">
+    <div>
+      <h1>Protocole du cycle d'escalade</h1>
+      <p>Pour chaque jeune, décrivez à chaque palier les signes précoces ou éléments déclencheurs, les comportements observés, et le protocole d'action à mettre en œuvre en équipe.</p>
+    </div>
+    <div class="actions">
+      <button id="btnPrint">Imprimer / PDF</button>
+      <button id="btnExport">Exporter (JSON)</button>
+    </div>
+  </div>
+
+  <div class="childbar">
+    <label for="childSelect">Jeune</label>
+    <select id="childSelect"></select>
+    <button id="btnNewChild">+ Nouveau jeune</button>
+    <button id="btnRenameChild">Renommer</button>
+    <button id="btnDeleteChild" class="danger">Supprimer</button>
+    <div class="spacer"></div>
+    <span class="savehint" id="saveHint"></span>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="printgrid" id="printGrid"></div>
+
+  <div class="author-credit">Auteur : Menad Malek — Éducateur spécialisé</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PHASES = [
+  { key:"calme", num:"1", label:"Calme / stabilité", sub:"La personne est disponible, relativement régulée.", color:"var(--c-calme)", ink:"var(--c-calme-ink)" },
+  { key:"declenchement", num:"2", label:"Déclenchement", sub:"Un événement vient fragiliser l'équilibre.", color:"var(--c-declenchement)", ink:"var(--c-declenchement-ink)" },
+  { key:"escalade", num:"3", label:"Escalade", sub:"La tension augmente progressivement.", color:"var(--c-escalade)", ink:"var(--c-escalade-ink)" },
+  { key:"crise", num:"4", label:"Crise / pic", sub:"Point maximal de désorganisation — l'objectif est de sécuriser.", color:"var(--c-crise)", ink:"var(--c-crise-ink)" },
+  { key:"desescalade", num:"5", label:"Désescalade", sub:"L'intensité diminue — phase encore fragile.", color:"var(--c-desescalade)", ink:"var(--c-desescalade-ink)" },
+  { key:"recuperation", num:"6", label:"Récupération", sub:"Retour des capacités de régulation — moment pour le travail éducatif.", color:"var(--c-recuperation)", ink:"var(--c-recuperation-ink)" },
+];
+const FIELDS = [
+  { key:"signes", label:"Signes précoces" },
+  { key:"comportements", label:"Comportements observés" },
+  { key:"protocole", label:"Protocole d'action" },
+  { key:"qui", label:"Qui intervient" },
+];
+
+let state = { children: [], currentId: null, activePhase: "calme" };
+let saveTimer = null;
+
+const HAS_CLAUDE_STORAGE = (typeof window.storage !== 'undefined') && window.storage && typeof window.storage.get === 'function';
+
+async function storeGet(key){
+  if(HAS_CLAUDE_STORAGE){
+    try{ const r = await window.storage.get(key); return r ? r.value : null; }
+    catch(e){ return null; }
+  }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+async function storeSet(key, value){
+  if(HAS_CLAUDE_STORAGE){
+    await window.storage.set(key, value);
+    return;
+  }
+  localStorage.setItem(key, value);
+}
+async function storeDelete(key){
+  if(HAS_CLAUDE_STORAGE){
+    try{ await window.storage.delete(key); }catch(e){}
+    return;
+  }
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+function blankPhases(){
+  const p = {};
+  PHASES.forEach(ph => { p[ph.key] = { signes:"", comportements:"", protocole:"", qui:"" }; });
+  return p;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+async function loadIndex(){
+  try{
+    const v = await storeGet('enfants:index');
+    return v ? JSON.parse(v) : [];
+  }catch(e){ return []; }
+}
+async function saveIndex(list){
+  await storeSet('enfants:index', JSON.stringify(list));
+}
+async function loadChild(id){
+  try{
+    const v = await storeGet('enfant:' + id);
+    return v ? JSON.parse(v) : null;
+  }catch(e){ return null; }
+}
+async function saveChild(child){
+  child.updatedAt = Date.now();
+  await storeSet('enfant:' + child.id, JSON.stringify(child));
+}
+
+function genId(){ return 'c' + Date.now() + Math.floor(Math.random()*1000); }
+
+async function init(){
+  const index = await loadIndex();
+  state.children = index;
+  if(index.length){
+    state.currentId = index[0].id;
+    const child = await loadChild(state.currentId);
+    state.currentChild = child;
+  }
+  renderChildSelect();
+  renderContent();
+}
+
+function renderChildSelect(){
+  const sel = document.getElementById('childSelect');
+  sel.innerHTML = '';
+  if(!state.children.length){
+    const opt = document.createElement('option');
+    opt.textContent = 'Aucun jeune enregistré';
+    sel.appendChild(opt);
+    sel.disabled = true;
+    document.getElementById('btnRenameChild').disabled = true;
+    document.getElementById('btnDeleteChild').disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  document.getElementById('btnRenameChild').disabled = false;
+  document.getElementById('btnDeleteChild').disabled = false;
+  state.children.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    if(c.id === state.currentId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+async function selectChild(id){
+  state.currentId = id;
+  state.currentChild = await loadChild(id);
+  renderContent();
+}
+
+function renderContent(){
+  const content = document.getElementById('content');
+  if(!state.currentChild){
+    content.innerHTML = `<div class="empty"><h2>Aucun jeune sélectionné</h2><p>Créez une fiche pour commencer à construire le protocole.</p></div>`;
+    document.getElementById('printGrid').innerHTML = '';
+    return;
+  }
+  const phase = PHASES.find(p=>p.key === state.activePhase) || PHASES[0];
+  let stepperHtml = '<div class="stepper">';
+  PHASES.forEach(p=>{
+    stepperHtml += `<div class="step ${p.key===phase.key?'active':''}" style="--phase-color:${p.color};--phase-ink:${p.ink}" data-phase="${p.key}">
+      <span class="num">Palier ${p.num}</span><span class="lbl">${p.label}</span>
+    </div>`;
+  });
+  stepperHtml += '</div>';
+
+  const data = state.currentChild.phases[phase.key];
+  let fieldsHtml = '<div class="fields">';
+  FIELDS.forEach(f=>{
+    const fieldLabel = (f.key === "signes" && (phase.num === "2" || phase.num === "3"))
+      ? "Éléments déclencheurs"
+      : f.label;
+    fieldsHtml += `<div class="field">
+      <label for="f-${f.key}">${fieldLabel}</label>
+      <textarea id="f-${f.key}" data-field="${f.key}" placeholder="…">${(data[f.key]||'').replace(/</g,'&lt;')}</textarea>
+    </div>`;
+  });
+  fieldsHtml += '</div>';
+
+  content.innerHTML = stepperHtml + `
+    <div class="panel" style="--phase-color:${phase.color};--phase-ink:${phase.ink}">
+      <h2>Palier ${phase.num} — ${phase.label}</h2>
+      <div class="sub">${phase.sub}</div>
+      ${fieldsHtml}
+    </div>`;
+
+  content.querySelectorAll('.step').forEach(el=>{
+    el.addEventListener('click', ()=>{ state.activePhase = el.dataset.phase; renderContent(); });
+  });
+  content.querySelectorAll('textarea').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      state.currentChild.phases[phase.key][el.dataset.field] = el.value;
+      scheduleSave();
+    });
+  });
+
+  renderPrintGrid();
+}
+
+function scheduleSave(){
+  document.getElementById('saveHint').textContent = 'Modification…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    await saveChild(state.currentChild);
+    document.getElementById('saveHint').textContent = 'Enregistré ✓';
+    setTimeout(()=>{ document.getElementById('saveHint').textContent=''; }, 1500);
+  }, 500);
+}
+
+function renderPrintGrid(){
+  const c = state.currentChild;
+  if(!c){ document.getElementById('printGrid').innerHTML=''; return; }
+  let html = `
+    <h1>Protocole individuel — ${escapeHtml(c.name)}</h1>
+    <div class="meta">Mis à jour le ${new Date(c.updatedAt||Date.now()).toLocaleDateString('fr-FR')}</div>
+    <table><thead><tr><th>Palier</th><th>Signes précoces / Éléments déclencheurs</th><th>Comportements observés</th><th>Protocole d'action</th><th>Qui intervient</th></tr></thead><tbody>`;
+  PHASES.forEach(p=>{
+    const d = c.phases[p.key];
+    html += `<tr><td class="phase">${p.num}. ${p.label}</td><td>${escapeHtml(d.signes)}</td><td>${escapeHtml(d.comportements)}</td><td>${escapeHtml(d.protocole)}</td><td>${escapeHtml(d.qui)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('printGrid').innerHTML = html;
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+}
+
+document.getElementById('btnNewChild').addEventListener('click', async ()=>{
+  try{
+    const name = window.prompt("Prénom / nom du jeune :");
+    if(!name || !name.trim()) return;
+    const child = { id: genId(), name: name.trim(), phases: blankPhases(), updatedAt: Date.now() };
+    await saveChild(child);
+    state.children.push({ id: child.id, name: child.name });
+    await saveIndex(state.children);
+    state.currentId = child.id;
+    state.currentChild = child;
+    state.activePhase = "calme";
+    renderChildSelect();
+    renderContent();
+    toast('Fiche créée pour ' + child.name);
+  }catch(err){
+    toast('Erreur : ' + err.message);
+    console.error(err);
+  }
+});
+
+document.getElementById('btnRenameChild').addEventListener('click', async ()=>{
+  try{
+    if(!state.currentChild) return;
+    const name = window.prompt("Nouveau nom :", state.currentChild.name);
+    if(!name || !name.trim()) return;
+    state.currentChild.name = name.trim();
+    await saveChild(state.currentChild);
+    const idx = state.children.find(c=>c.id===state.currentChild.id);
+    if(idx) idx.name = state.currentChild.name;
+    await saveIndex(state.children);
+    renderChildSelect();
+    renderContent();
+  }catch(err){
+    toast('Erreur : ' + err.message);
+    console.error(err);
+  }
+});
+
+document.getElementById('btnDeleteChild').addEventListener('click', async ()=>{
+  try{
+    if(!state.currentChild) return;
+    if(!window.confirm("Supprimer définitivement la fiche de " + state.currentChild.name + " ?")) return;
+    await storeDelete('enfant:' + state.currentChild.id);
+    state.children = state.children.filter(c=>c.id !== state.currentChild.id);
+    await saveIndex(state.children);
+    if(state.children.length){
+      state.currentId = state.children[0].id;
+      state.currentChild = await loadChild(state.currentId);
+    } else {
+      state.currentId = null; state.currentChild = null;
+    }
+    renderChildSelect();
+    renderContent();
+  }catch(err){
+    toast('Erreur : ' + err.message);
+    console.error(err);
+  }
+});
+
+document.getElementById('childSelect').addEventListener('change', (e)=>{
+  selectChild(e.target.value);
+});
+
+document.getElementById('btnPrint').addEventListener('click', ()=>{ window.print(); });
+
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  if(!state.currentChild) return;
+  const blob = new Blob([JSON.stringify(state.currentChild, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'protocole-' + state.currentChild.name.replace(/\s+/g,'_') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+init();
+</script>
+</body>
+</html>
